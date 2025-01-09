@@ -20,7 +20,9 @@ Please make sure to add your changes to the appropriate categories:
 
 ### Added
 
-- n/a
+- Added support for async-await (via `async` crate feature, enabled by default):
+  - Added `fn into_async()` method to `IncrementalEncoder<…>`, which returns an async version of the encoder, whose `poll()` method can be `.await`-ed.
+  - Added `fn into_async()` method to `IndexedIncrementalEncoder<…>`, which returns an async version of the encoder, whose `poll()` method can be `.await`-ed.
 
 ### Changed
 
