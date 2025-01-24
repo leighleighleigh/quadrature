@@ -20,13 +20,11 @@ Please make sure to add your changes to the appropriate categories:
 
 ### Added
 
-- Added support for async-await (via optional `async` crate feature):
-  - Added `async fn poll_async()` method to `IncrementalEncoder<…>`.
-  - Added `async fn poll_async()` method to `IndexedIncrementalEncoder<…>`.
+- n/a
 
 ### Changed
 
-- n/a
+- Bumped MSRV from `1.74.1` to `1.75.0`.
 
 ### Deprecated
 

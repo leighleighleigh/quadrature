@@ -29,7 +29,7 @@ pub struct IncrementalEncoder<Mode, Clk, Dt, Steps = FullStep, T = i32, PM = Blo
     pin_dt_state: bool,
     is_reversed: bool,
     _mode: PhantomData<Mode>,
-    _pollmode: PhantomData<PM>,
+    _poll_mode: PhantomData<PM>,
 }
 
 impl<Mode, Clk, Dt, Steps, T, PM> IncrementalEncoder<Mode, Clk, Dt, Steps, T, PM>
@@ -60,7 +60,7 @@ where
             pin_dt_state,
             is_reversed: false,
             _mode: PhantomData,
-            _pollmode: PhantomData,
+            _poll_mode: PhantomData,
         }
     }
 }
@@ -181,7 +181,7 @@ where
             pin_dt_state: self.pin_dt_state,
             is_reversed: self.is_reversed,
             _mode: PhantomData,
-            _pollmode: PhantomData,
+            _poll_mode: PhantomData,
         }
     }
 }
@@ -204,7 +204,7 @@ where
     /// you would either call `encoder.poll()` directly, or via `encoder.poll().unwrap_or_default()`
     /// to fall back to `None` in case of `Err(_)`.
     ///
-    /// Waits asyncronously for any of the pins to change state, before returning.
+    /// Waits asynchronously for any of the pins to change state, before returning.
     pub async fn poll(&mut self) -> Result<Option<Mode::Movement>, Error> {
         let clk_fut = match self.pin_clk_state {
             true => self.pin_clk.wait_for_falling_edge().left_future(),
@@ -240,7 +240,7 @@ where
             pin_dt_state: self.pin_dt_state,
             is_reversed: self.is_reversed,
             _mode: PhantomData,
-            _pollmode: PhantomData,
+            _poll_mode: PhantomData,
         }
     }
 }
