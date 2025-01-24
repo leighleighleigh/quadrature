@@ -28,11 +28,22 @@ futures = { version = "0.3.31", default-features = false, optional = true }
 embassy-futures = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
-embedded-hal-mock = { version = "0.11.0", features = [
+embassy-executor = { version = "0.7.0", features = ["task-arena-size-32768", "arch-std", "executor-thread", "log"] }
+embassy-time = { version = "0.4.0", features = ["log","std"] }
+log = "0.4.25"
+env_logger = "0.11.6"
+static_cell = "2.1.0"
+getch-rs = "0.2.0"
+embassy-sync = { version = "0.6.2", features = ["std"] }
+
+[dev-dependencies.embedded-hal-mock]
+git = "https://github.com/leighleighleigh/embedded-hal-mock"
+branch = "async-wait-forever"
+features = [
     "eh0",
     "eh1",
-    "embedded-hal-async",
-] }
+    "embedded-hal-async"
+]
 
 [features]
 default = ["async"]
@@ -61,3 +72,12 @@ required-features = ["async"]
 [[example]]
 name = "linear_async"
 required-features = ["async"]
+
+[[example]]
+name = "embassy_async"
+required-features = ["async"]
+
+[[example]]
+name = "embassy_interactive"
+required-features = ["async"]
+
