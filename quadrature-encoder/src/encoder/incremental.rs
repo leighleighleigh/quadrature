@@ -133,6 +133,16 @@ where
             false => self.decoder.set_counter(position),
         }
     }
+
+    /// Return the pin state as gray-code binary value
+    pub fn raw_state(&self) -> u8 {
+        (self.pin_clk_state as u8) | (self.pin_dt_state as u8) << 1
+    }
+
+    /// The number of pulses per full quadrature cycle, depending on the step mode.
+    pub const fn pulses_per_cycle(&self) -> usize {
+        Steps::PULSES_PER_CYCLE
+    }
 }
 
 impl<Mode, Clk, Dt, Steps, T> IncrementalEncoder<Mode, Clk, Dt, Steps, T, Blocking>
