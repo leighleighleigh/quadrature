@@ -2,7 +2,7 @@
 
 use core::marker::PhantomData;
 
-use num_traits::{One, SaturatingAdd, Zero};
+use num_traits::{One, SaturatingAdd, WrappingNeg, Zero};
 use quadrature_decoder::{Change, FullStep, IndexedIncrementalDecoder, StepMode};
 
 #[allow(unused_imports)]
@@ -75,7 +75,7 @@ where
     Dt: InputPin,
     Idx: InputPin,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
     PM: PollMode,
 {
     /// Sets the encoder's reversed mode, making it report flipped movements and positions.
@@ -124,12 +124,18 @@ where
 
     /// Returns the encoder's position counter relative to its initial position in number of cycles.
     pub fn position(&self) -> T {
-        self.decoder.counter()
+        match self.is_reversed() {
+            true => self.decoder.counter().wrapping_neg(),
+            false => self.decoder.counter(),
+        }
     }
 
     /// Sets the encoder's position.
     pub fn set_position(&mut self, position: T) {
-        self.decoder.set_counter(position);
+        match self.is_reversed() {
+            true => self.decoder.set_counter(position.wrapping_neg()),
+            false => self.decoder.set_counter(position),
+        }
     }
 }
 
@@ -140,7 +146,7 @@ where
     Dt: InputPin,
     Idx: InputPin,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
 {
     /// Updates the encoder's state based on the given **clock**, **data**, and **index** pins,
     /// returning the direction if a movement was detected, `None` if no movement was detected,
@@ -176,7 +182,7 @@ where
     Dt: InputPin + Wait,
     Idx: InputPin + Wait,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
 {
     /// Reconfigure the driver so that poll() is an async fn
     pub fn into_async(self) -> IndexedIncrementalEncoder<Mode, Clk, Dt, Idx, Steps, T, Async>
@@ -206,7 +212,7 @@ where
     Dt: InputPin + Wait,
     Idx: InputPin + Wait,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
 {
     /// Updates the encoder's state based on the given **clock**, **data**, and **index** pins,
     /// returning the direction if a movement was detected, `None` if no movement was detected,
@@ -220,29 +226,38 @@ where
     /// Waits asyncronously for any of the pins to change state, before returning.
     pub async fn poll(&mut self) -> Result<Option<Mode::Movement>, Error> {
         let clk_fut = match self.pin_clk_state {
-            true => self.pin_clk.wait_for_falling_edge().left_future(),
-            false => self.pin_clk.wait_for_rising_edge().right_future(),
+            true => self.pin_clk.wait_for_low().left_future(),
+            false => self.pin_clk.wait_for_high().right_future(),
         };
 
         let dt_fut = match self.pin_dt_state {
-            true => self.pin_dt.wait_for_falling_edge().left_future(),
-            false => self.pin_dt.wait_for_rising_edge().right_future(),
+            true => self.pin_dt.wait_for_low().left_future(),
+            false => self.pin_dt.wait_for_high().right_future(),
         };
 
         let idx_fut = match self.pin_idx_state {
-            true => self.pin_idx.wait_for_falling_edge().left_future(),
-            false => self.pin_idx.wait_for_rising_edge().right_future(),
+            true => self.pin_idx.wait_for_low().left_future(),
+            false => self.pin_idx.wait_for_high().right_future(),
         };
 
         match select3(clk_fut, dt_fut, idx_fut).await {
             Either3::First(_) => {
-                self.pin_clk_state = !self.pin_clk_state;
+                self.pin_clk_state = self
+                    .pin_clk
+                    .is_high()
+                    .map_err(|_| Error::InputPin(InputPinError::PinClk))?;
             }
             Either3::Second(_) => {
-                self.pin_dt_state = !self.pin_dt_state;
+                self.pin_dt_state = self
+                    .pin_dt
+                    .is_high()
+                    .map_err(|_| Error::InputPin(InputPinError::PinDt))?;
             }
             Either3::Third(_) => {
-                self.pin_idx_state = !self.pin_idx_state;
+                self.pin_idx_state = self
+                    .pin_idx
+                    .is_high()
+                    .map_err(|_| Error::InputPin(InputPinError::PinIdx))?;
             }
         };
 
