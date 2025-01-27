@@ -71,7 +71,7 @@ where
     Clk: InputPin,
     Dt: InputPin,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + WrappingNeg  + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
     PM: PollMode,
 {
     /// Sets the encoder's reversed mode, making it report flipped movements and positions.
@@ -151,7 +151,7 @@ where
     Clk: InputPin,
     Dt: InputPin,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + WrappingNeg  + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
 {
     /// Updates the encoder's state based on the given **clock** and **data** pins,
     /// returning the direction if a movement was detected, `None` if no movement was detected,
@@ -182,7 +182,7 @@ where
     Clk: InputPin + Wait,
     Dt: InputPin + Wait,
     Steps: StepMode,
-    T: Copy + Zero + One + SaturatingAdd + WrappingNeg  + From<i8>,
+    T: Copy + Zero + One + SaturatingAdd + WrappingNeg + From<i8>,
 {
     /// Reconfigure the driver so that poll() is an async fn
     pub fn into_async(self) -> IncrementalEncoder<Mode, Clk, Dt, Steps, T, Async>
@@ -232,21 +232,18 @@ where
             false => self.pin_dt.wait_for_high().right_future(),
         };
 
+        // toggle the internal state, rather than reading the pin state directly,
+        // as the pin state has likely changed since the wait_for_low() future was resolved
+        // by the hardware interrupt behind-the-scenes.
         match select(clk_fut, dt_fut).await {
             Either::First(_) => {
-                self.pin_clk_state = self
-                    .pin_clk
-                    .is_high()
-                    .map_err(|_| Error::InputPin(InputPinError::PinClk))?;
+                self.pin_clk_state = !self.pin_clk_state;
             }
             Either::Second(_) => {
-                // self.pin_dt_state = !self.pin_dt_state;
-                self.pin_dt_state = self
-                    .pin_dt
-                    .is_high()
-                    .map_err(|_| Error::InputPin(InputPinError::PinDt))?;
+                self.pin_dt_state = !self.pin_dt_state;
             }
         };
+
         self.update()
     }
 

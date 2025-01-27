@@ -252,24 +252,18 @@ where
             false => self.pin_idx.wait_for_high().right_future(),
         };
 
+        // toggle the internal state, rather than reading the pin state directly,
+        // as the pin state has likely changed since the wait_for_low() future was resolved
+        // by the hardware interrupt behind-the-scenes.
         match select3(clk_fut, dt_fut, idx_fut).await {
             Either3::First(_) => {
-                self.pin_clk_state = self
-                    .pin_clk
-                    .is_high()
-                    .map_err(|_| Error::InputPin(InputPinError::PinClk))?;
+                self.pin_clk_state = !self.pin_clk_state;
             }
             Either3::Second(_) => {
-                self.pin_dt_state = self
-                    .pin_dt
-                    .is_high()
-                    .map_err(|_| Error::InputPin(InputPinError::PinDt))?;
+                self.pin_dt_state = !self.pin_dt_state;
             }
             Either3::Third(_) => {
-                self.pin_idx_state = self
-                    .pin_idx
-                    .is_high()
-                    .map_err(|_| Error::InputPin(InputPinError::PinIdx))?;
+                self.pin_idx_state = !self.pin_idx_state;
             }
         };
 
